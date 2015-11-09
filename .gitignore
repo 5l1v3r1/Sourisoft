@@ -32,3 +32,7 @@
 Serveur\ de\ test/serveur
 Client/client
 Serveur/serveur
+Client/.gdb_history
+Client/peda-session-client.txt
+Serveur/.gdb_history
+Serveur/peda-session-client.txt

