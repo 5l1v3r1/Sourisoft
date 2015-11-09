@@ -26,7 +26,7 @@ using namespace std;
 
 int main(int argc,char *argv[])
 {
-    int sockRVfd,sockCLfd;
+    int sockRVfd,sockCLfd,pid;
     string buffer;
     struct sockaddr_in addressRV;
     socklen_t addressRVlen;
@@ -74,6 +74,8 @@ int main(int argc,char *argv[])
     }
 
     // Waiting for client
+    while(1)
+    {
     cout<<"Attente d'un client..."<<endl;
     addressClientlen = sizeof(addressClient);
     sockCLfd = accept(sockRVfd,(struct sockaddr*)&addressClient,&addressClientlen);
@@ -82,7 +84,15 @@ int main(int argc,char *argv[])
         perror("accept");
         exit (EXIT_FAILURE);
     }
-    struct sockaddr_storage addr;
+    
+    pid = fork();
+   if (pid < 0) {
+      perror("ERROR on fork");
+      exit(1);
+   }
+   if(pid==0)
+   {
+      struct sockaddr_storage addr;
       socklen_t len;
       char ipstr[INET6_ADDRSTRLEN];
 
@@ -117,22 +127,29 @@ int main(int argc,char *argv[])
            val = buffer.size();
            if(send(sockCLfd,buffer.c_str(),val,0)!=val)
            {
-               perror("send");
+               perror("write");
                exit (EXIT_FAILURE);
            }
            cout<<"Command sent...\nwaiting for response..."<<endl;
     
            if((val=recv(sockCLfd,buf,BUFSIZE,0))<0)
            {
-               perror("recv");
+               perror("read");
                exit (EXIT_FAILURE);
            }
            buf[val]='\0';
            cout<<"Reponse:\n"<<buf<<endl;
-   }
+
    
        close(sockCLfd);
-      return 0;
+    
+       }
+    }else
+    {
+      close(sockCLfd);
+    }
+    
+    
+   }
+
 }
-    
-    

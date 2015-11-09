@@ -6,7 +6,7 @@
       gcc client.cpp -o client -Wall
 *
 */
-
+	
 // if we're on windows
 #if defined (WIN32)
 	#include <windows.h>
@@ -51,6 +51,8 @@ int main(int argc, char const *argv[])
 	char buffer[BUFSIZE];
 	struct sockaddr_in server_address;
 	bool isConnected = true;
+	while(true)
+	{
 	// Create the socket 
 	if((sock= socket(AF_INET,SOCK_STREAM,0))== -1)
 	{
@@ -62,8 +64,8 @@ int main(int argc, char const *argv[])
 	server_address.sin_family = AF_INET;
 	server_address.sin_port = htons(PORT);
 	server_address.sin_addr.s_addr= inet_addr(IP);
-	while(true)
-	{
+	
+		cout<<"Try to connect..."<<endl;
 		// Try to connect 
 		while(connect(sock, (struct sockaddr*)&server_address,sizeof(server_address)) == -1)
 		{
@@ -73,31 +75,38 @@ int main(int argc, char const *argv[])
 				Sleep(20000);
 			// else, if we're on Linux
 			#elif defined (linux)
-				sleep(20);
+				sleep(2);
 			#endif
 		}
+		cout<<"Connecté au serveur !"<<endl;
 		isConnected=true;
 	    while(isConnected)
 	    {
+	    	#if defined (WIN32)
+				Sleep(500);
+			// else, if we're on Linux
+			#elif defined (linux)
+				usleep(500000);
+			#endif
 	    	if((val=recv(sock,buffer,BUFSIZE,0))<0)
 	        {
+	        	cout<<"RIEN RECU"<<endl;
 	            perror("recv");
-	            exit (EXIT_FAILURE);
 	        }
 	        buffer[val]='\0';
 	        cout<<"recu :"<<buffer<<endl;
-	        if(val>=0)
+	        if(val>0)
 	        {
 		        string result = "I'M ROOT";
 		        len = result.size();
 		        if(send(sock,result.c_str(),len,0)!=len)
 		        {
-		            perror("write");
-		            exit (EXIT_FAILURE);
+		            perror("send");
 		        }
-	    	}else
+	    	}else if(val<=0)
 	    	{
-	    		isConnected==false;
+	    		close(sock);
+	    		isConnected=false;
 	    	}
 	    }
 	}
