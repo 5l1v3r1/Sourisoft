@@ -15,7 +15,7 @@
 
 #define PORT 2222
 #define LIBSSH_STATIC 1
-#define PASSWORD "EffyKurt"
+#define PASSWORD "*****"
 
 #include <libssh/libssh.h>
 #include <stdio.h>

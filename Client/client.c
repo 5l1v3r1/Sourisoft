@@ -15,6 +15,9 @@
 
 #include "ConnectAuth.h"
 
+
+  
+
 int send_command_and_receive_result(ssh_session session,char* command);
 int shell_session(ssh_session session);
 int interactive_shell_session(ssh_channel channel);
@@ -34,10 +37,10 @@ int main(int argc, char const *argv[])
     printf("Myssh NULL error conenct_ssh\n");
     return -1;
   }
-  printf("Connection Terminée lancement du shell");
+  printf("Connection Terminée lancement du shell\n");
 	/* Le code du client */
-	send_command_and_receive_result(my_ssh_session,"ls");
-  //shell_session(my_ssh_session);
+	//send_command_and_receive_result(my_ssh_session,"ls");
+  interactive_shell_session(my_ssh_session);
 
 	
 	ssh_disconnect(my_ssh_session);
@@ -94,20 +97,26 @@ int send_command_and_receive_result(ssh_session session,char* command)
 
 int shell_session(ssh_session session)
 {
+printf("NEW SHELL\n");
+
   ssh_channel channel;
   int rc;
   channel = ssh_channel_new(session);
+printf("GET CHANNEL OK\n");
   if (channel == NULL)
     return SSH_ERROR;
   rc = ssh_channel_open_session(channel);
   if (rc != SSH_OK)
   {
+    fprintf(stderr,"error channel open session\n");
     ssh_channel_free(channel);
     return rc;
   }
+printf("CHANNEL OPEN SESSION OK\n");
   interactive_shell_session(channel);
+printf("INTERACTIVE SHELL OK\n");
 
-  ssh_channel_close(channel);
+ssh_channel_close(channel);
   ssh_channel_send_eof(channel);
   ssh_channel_free(channel);
   return SSH_OK;

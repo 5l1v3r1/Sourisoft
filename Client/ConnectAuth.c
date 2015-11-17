@@ -48,13 +48,13 @@ ssh_session connect_ssh(const char *host, const char *user,int verbosity){
   fprintf(stderr,"host verified\n");
   auth=authenticate_console(session);
   if(auth==SSH_AUTH_SUCCESS){
+    fprintf(stderr,"Authentication ok!\n");
     return session;
   } else if(auth==SSH_AUTH_DENIED){
     fprintf(stderr,"Authentication failed");
   } else {
     fprintf(stderr,"CError while authenticating : %s",ssh_get_error(session));
   }
-  ssh_disconnect(session);
   return NULL;
 }
 
@@ -62,7 +62,6 @@ ssh_session connect_ssh(const char *host, const char *user,int verbosity){
 int verify_knownhost(ssh_session session){
   char *hexa;
   int state;
-  char buf[10];
   unsigned char *hash;
   int hlen;
 
@@ -243,11 +242,6 @@ int authenticate_console(ssh_session session){
     }
   }
 
-  banner = ssh_get_issue_banner(session);
-  if (banner) {
-    printf("%s\n",banner);
-    free(banner);
-  }
 
   return rc;
 }

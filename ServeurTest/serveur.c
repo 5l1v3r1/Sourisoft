@@ -24,7 +24,6 @@ clients must be made or how a client should react.
 #include <sys/wait.h>
 #include <string.h>
 #include <stdio.h>
-#include <iostream>
 #define RSAPATH "/home/atlas/.ssh/rsa_souris"
 #define DSAPATH "/home/atlas/.ssh/dsa_souris"
 #define SFTP_SERVER_PATH "/usr/lib/sftp-server"
@@ -317,13 +316,13 @@ static void handle_session(ssh_event event, ssh_session session) {
     };
 
     /* Our struct holding information about the session. */
-     session_data_struct sdata = {
+    struct  session_data_struct sdata = {
         .channel = NULL,
         .auth_attempts = 0,
         .authenticated = 0
     };
 
-     ssh_channel_callbacks_struct channel_cb = {
+     struct ssh_channel_callbacks_struct channel_cb = {
         .userdata = &cdata,
         .channel_pty_request_function = pty_request,
         .channel_pty_window_change_function = pty_resize,
@@ -333,7 +332,7 @@ static void handle_session(ssh_event event, ssh_session session) {
         .channel_subsystem_request_function = subsystem_request
     };
 
-    ssh_server_callbacks_struct server_cb = {
+   struct ssh_server_callbacks_struct server_cb = {
         .userdata = &sdata,
         .auth_password_function = auth_password,
         .channel_open_request_session_function = channel_open,
@@ -465,27 +464,27 @@ int main(int argc, char **argv){
     iError=ssh_bind_options_set(sshbind, SSH_BIND_OPTIONS_LOG_VERBOSITY_STR, "0");
 
     if(iError < 0 )
-        std::cout<<"Error listening to socket "<< ssh_get_error(sshbind)<<std::endl;
-    std::cout<<"listen..."<<std::endl;
+        printf("Error listening to socket %s",ssh_get_error(sshbind));
+    printf("listen...\n");
 
     if(ssh_bind_listen(sshbind)<0){
         printf("Error listening to socket: %s\n",ssh_get_error(sshbind));
         return 1;
     }
-        std::cout<<"accept..."<<std::endl;
+        printf("accept...\n");
 
     r=ssh_bind_accept(sshbind,session);
     if(r==SSH_ERROR){
       printf("error accepting a connection : %s\n",ssh_get_error(sshbind));
       return 1;
     }
-        std::cout<<"acepted,exchange key..."<<std::endl;
+        printf("acepted,exchange key...\n");
 
     if (ssh_handle_key_exchange(session)) {
         printf("ssh_handle_key_exchange: %s\n", ssh_get_error(session));
         return 1;
     }
-        std::cout<<"key done get message..."<<std::endl;
+        printf("key done get message...\n");
 
     do {
         message=ssh_message_get(session); 
