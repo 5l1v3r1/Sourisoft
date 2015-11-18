@@ -1,52 +1,78 @@
-/**
-*     Sourisoft's client     
-*
-*     @author Kevin Hascoët
-*
-      g++ client.cpp -o client -lssh -Wall
-*
-*/
-#define LIBSSH_STATIC 1
 
 #include <libssh/libssh.h>
+#include <stdlib.h>
 #include <stdio.h>
-#include <string.h> 
-#include <unistd.h>
 
-#include "ConnectAuth.h"
+#include "client.h"
+
+int main() {
+
+    ssh_session session;
+    ssh_channel channel;
+    int rc, port = 2222;
+    char buffer[1024];
+    char choix;
+    unsigned int nbytes;
+
+    printf("Session...\n");
+    session = ssh_new();
+    if (session == NULL) exit(-1);
+
+    int i=1;
+    ssh_options_set(session, SSH_OPTIONS_HOST, "127.0.0.1");
+    ssh_options_set(session, SSH_OPTIONS_SSH1,&i);
+    ssh_options_set(session, SSH_OPTIONS_PORT, &port);
+    ssh_options_set(session, SSH_OPTIONS_USER, "atlas");
+    ssh_options_set(session, SSH_OPTIONS_HOSTKEYS,"ssh-rsa");
+
+    printf("Connecting...\n");
+    rc = ssh_connect(session);
+    if (rc != SSH_OK) error(session);
 
 
-  
+    printf("Autentication...\n");
+    authenticate_password(session);
 
-int send_command_and_receive_result(ssh_session session,char* command);
-int shell_session(ssh_session session);
-int interactive_shell_session(ssh_channel channel);
+    int continuer=1;
+    while(continuer)
+    {
+        printf("Tapez 's' pour avoir un shell ou 'c' pour envoyer une commande 'q' pour quitter :");
+        scanf("%c",&choix);
+        if(choix=='s')
+        {
+             shell_session(session);
+        }else if(choix=='c')
+        {
+          printf("Entrez la commande a envoyer :");
+          scanf("%s",buffer);
+          rc = send_command_and_receive_result(session,buffer);
+          if(rc!= SSH_OK){
+            fprintf(stderr,"erreur commande\n");
+          }
+        }else if(choix=='q')
+        {
+          continuer=0;
+        }
+    }
+    free_session(session);
 
-int main(int argc, char const *argv[])
-{
-	ssh_session my_ssh_session;
-	my_ssh_session = ssh_new();
-  int verbosity = SSH_LOG_NOLOG;
-	if (my_ssh_session == NULL)
-		return -1;
-
- 
-	my_ssh_session = connect_ssh("127.0.0.1","atlas",verbosity);
-  if(my_ssh_session == NULL)
-  {
-    printf("Myssh NULL error conenct_ssh\n");
-    return -1;
-  }
-  printf("Connection Terminée lancement du shell\n");
-	/* Le code du client */
-	//send_command_and_receive_result(my_ssh_session,"ls");
-  interactive_shell_session(my_ssh_session);
-
-	
-	ssh_disconnect(my_ssh_session);
-	ssh_free(my_ssh_session);
-	return 0;
+    return 0;
 }
+
+int authenticate_password(ssh_session session)
+{
+  char *password="EffyKurt";
+  int rc;
+  rc = ssh_userauth_password(session, NULL, password);
+  if (rc == SSH_AUTH_ERROR)
+  {
+     fprintf(stderr, "Authentication failed: %s\n",
+       ssh_get_error(session));
+     return SSH_AUTH_ERROR;
+  }
+  return rc;
+}
+
 
 int send_command_and_receive_result(ssh_session session,char* command)
 {
@@ -95,9 +121,9 @@ int send_command_and_receive_result(ssh_session session,char* command)
 }
 
 
+
 int shell_session(ssh_session session)
 {
-printf("NEW SHELL\n");
 
   ssh_channel channel;
   int rc;
@@ -112,9 +138,7 @@ printf("GET CHANNEL OK\n");
     ssh_channel_free(channel);
     return rc;
   }
-printf("CHANNEL OPEN SESSION OK\n");
   interactive_shell_session(channel);
-printf("INTERACTIVE SHELL OK\n");
 
 ssh_channel_close(channel);
   ssh_channel_send_eof(channel);
@@ -167,4 +191,24 @@ int interactive_shell_session(ssh_channel channel)
   }
 
   return rc;
+
+}
+
+
+
+void free_channel(ssh_channel channel) {
+    ssh_channel_send_eof(channel);
+    ssh_channel_close(channel);
+    ssh_channel_free(channel);
+}
+
+void free_session(ssh_session session) {
+    ssh_disconnect(session);
+    ssh_free(session);
+}
+
+void error(ssh_session session) {
+    fprintf(stderr, "Error: %s\n", ssh_get_error(session));
+    free_session(session);
+    exit(-1);
 }
