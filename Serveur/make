@@ -1,0 +1,1 @@
+gcc serveur.c -o serveur -std=c99 -lssh  -D_POSIX_C_SOURCE=200809L -D_POSIX_PTHREAD_SEMANTICS -lutil
