@@ -3,7 +3,7 @@
 #include "network_p.h"
 
 // Le client se connecte au serveur
-void connect_to_server( const char* const addr ) {
+int connect_to_server( const char* const addr ) {
   int sock;                      
   struct sockaddr_in server;     
 
@@ -11,7 +11,7 @@ void connect_to_server( const char* const addr ) {
   sock = socket( PF_INET, SOCK_STREAM, 0 );
   if ( sock == -1 ) {     
     perror("error: sock");
-    exit(1);
+    return -1;
   }
 
   
@@ -24,25 +24,26 @@ void connect_to_server( const char* const addr ) {
   if ( connect( sock, (const struct sockaddr *)&server, sizeof(server) ) != 0 ) {    
     perror("error:");
     close(sock);
-    exit(1);
+    return -1;
   }
 
   // Il recoit les ordres du serveur
   recv_from_server( sock );
   
-  close(sock);    
+  close(sock); 
+  return 0;   
 }
 
 // Le serveur recoit le client
-void connect_from_client( ) {
-  int sock, fd,yes;                 
+int connect_from_client( ) {
+  int sock, fd,yes=1;                 
   struct sockaddr_in local;     
 
   
   sock = socket( PF_INET, SOCK_STREAM, 0 );
   if ( sock == -1 ) {     
     perror("error: sock");
-    exit(1);
+    return -1;
   }
 
   
@@ -54,19 +55,19 @@ void connect_from_client( ) {
   if(setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
     perror("setsockopt");
     close(sock);
-    exit(1);
+    return -1;
   }
   if ( bind( sock, (const struct sockaddr *)&local, sizeof(local) ) != 0  ) {     
     perror("error:");
     close(sock);
-    exit(1);
+    return -1;
   }
 
   
   if ( listen( sock, 5 ) != 0 ) {    
     perror("error:");
     close(sock);
-    exit(1);
+    return -1;
   }
 
   struct sockaddr_in client;    
@@ -86,6 +87,7 @@ void connect_from_client( ) {
   }
   
   close(sock);    
+  return 0;
 }
 
 // envoi des ordres au client

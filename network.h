@@ -6,7 +6,7 @@
 #define ERROR -1
 #define SUCCESS 0
 
-void connect_to_server( const char* const );
-void connect_from_client( void );
+int connect_to_server( const char* const );
+int connect_from_client( void );
 
 #endif
