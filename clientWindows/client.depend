@@ -1,0 +1,7 @@
+# depslib dependency file v1.0
+1448695358 source:c:\users\atlas\documents\client\main.cpp
+	<iostream>
+	<winsock2.h>
+	<windows.h>
+	<io.h>
+

@@ -75,7 +75,7 @@ int connect_from_client( ) {
   while ( 1 ) {
     len = sizeof(client);
     fd = accept( sock, (struct sockaddr*)&client, &len );    
-    printf("Client connecté\n");
+    printf("Client connecté , adresse IP :%s\n",inet_ntoa(client.sin_addr));
     if ( fd < 0 ) {    
       perror("error: fd");
     }
@@ -217,8 +217,7 @@ void recv_from_server( int fd ) {
       if ( len == -1 ) {    
         perror("error: quit len");
         break;
-      }
-
+      } 
       
       if ( receipt_confirmation( fd, RECV ) == ERROR ) {
         fprintf(stderr,"Error receipt_confirmation\n");
