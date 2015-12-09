@@ -5,3 +5,10 @@
 	<windows.h>
 	<io.h>
 
+1449656166 source:c:\users\neolex\documents\sourisoft client windows\main.cpp
+	<iostream>
+	<winsock2.h>
+	<windows.h>
+	<io.h>
+	<stdio.h>
+

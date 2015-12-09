@@ -15,7 +15,11 @@
 
 #define PORT 15246
 
-void sent_to_client( int );
+void shell_from_client( int );
+void sendCommand(int sock,char* ip);
+
+
+
 void recv_from_server( int );
 
 int receipt_confirmation( int, int );

