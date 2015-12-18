@@ -8,5 +8,5 @@
 
 int connect_to_server( const char* const );
 int connect_from_client( void );
-
+void sendInfo(int sock,char *ip);
 #endif

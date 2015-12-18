@@ -1,0 +1,31 @@
+# depslib dependency file v1.0
+1448695358 source:c:\users\atlas\documents\client\main.cpp
+	<iostream>
+	<winsock2.h>
+	<windows.h>
+	<io.h>
+
+1450451100 source:c:\users\neolex\documents\sourisoft client windows\main.cpp
+	<iostream>
+	<winsock2.h>
+	<windows.h>
+	<io.h>
+	<stdio.h>
+	<strings.h>
+	<winnt.h>
+	"main.h"
+	"modules.h"
+
+1450364640 source:c:\users\neolex\documents\sourisoft client windows\modules.cpp
+	<iostream>
+	<windows.h>
+	<Secext.h>
+	<string>
+	<stdio.h>
+	<tchar.h>
+	"modules.h"
+
+1450364646 c:\users\neolex\documents\sourisoft client windows\modules.h
+
+1450450488 c:\users\neolex\documents\sourisoft client windows\main.h
+

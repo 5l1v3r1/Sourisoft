@@ -36,6 +36,9 @@
 			<Add option="-fexceptions" />
 		</Compiler>
 		<Unit filename="main.cpp" />
+		<Unit filename="main.h" />
+		<Unit filename="modules.cpp" />
+		<Unit filename="modules.h" />
 		<Extensions>
 			<code_completion />
 			<envvars />
